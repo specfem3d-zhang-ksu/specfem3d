@@ -32,7 +32,8 @@
                             nspec2D_xmin,nspec2D_xmax,nspec2D_ymin,nspec2D_ymax,NSPEC2D_BOTTOM,NSPEC2D_TOP,&
                             NSPEC2DMAX_XMIN_XMAX,NSPEC2DMAX_YMIN_YMAX, &
                             ibelm_xmin,ibelm_xmax,ibelm_ymin,ibelm_ymax,ibelm_bottom,ibelm_top,&
-                            NMATERIALS,material_properties)
+                            NMATERIALS,material_properties,&
+                            nspec_CPML,CPML_to_spec,CPML_regions,is_CPML)
 
   use constants,only: MAX_STRING_LEN,IDOMAIN_ACOUSTIC,IDOMAIN_ELASTIC
 
@@ -73,6 +74,13 @@
   ! first dimension  : material_id
   ! second dimension : #rho  #vp  #vs  #Q_flag  #anisotropy_flag #domain_id #material_id
   double precision , dimension(NMATERIALS,7) ::  material_properties
+
+    ! cpml
+  integer,intent(in) :: nspec_CPML
+  integer, dimension(nspec_CPML),intent(in) :: CPML_to_spec,CPML_regions
+  logical, dimension(nspec),intent(in) :: is_CPML
+  integer :: nspec_CPML_total,ispec_CPML
+  
   double precision , dimension(16) :: matpropl
   integer :: i,ispec,iglob,ier
   ! dummy_nspec_cpml is used here to match the read instructions in generate_databases/read_partition_files.f90
@@ -241,9 +249,29 @@
 
   ! JC JC todo: implement C-PML code in internal mesher
   ! dummy_nspec_cpml is used here to match the read instructions in generate_databases/read_partition_files.f90
-  dummy_nspec_cpml = 0
-  write(IIN_database) dummy_nspec_cpml
+  !dummy_nspec_cpml = 0
+  !write(IIN_database) dummy_nspec_cpml
 
+   ! cpml
+  call sum_all_i(nspec_CPML,nspec_CPML_total)
+  call synchronize_all()
+  call bcast_all_singlei(nspec_CPML_total)
+  call synchronize_all()
+  
+  write(IIN_database) nspec_CPML_total
+  if(nspec_CPML_total > 0) then
+
+     write(IIN_database) nspec_CPML
+     do ispec_CPML=1,nspec_CPML
+        write(IIN_database) CPML_to_spec(ispec_CPML), CPML_regions(ispec_CPML)
+     end do
+     do ispec=1,nspec
+        write(IIN_database) is_CPML(ispec)
+     end do
+
+  end if
+ 
+  
   ! MPI Interfaces
 
   if (NPROC_XI >= 2 .or. NPROC_ETA >= 2) then

@@ -63,7 +63,7 @@ print '#done curves: '+str(countcurves)
 print ''
 
 cubit.cmd('Display')    
-cubit.cmd('pause')
+#cubit.cmd('pause')
 
 # creates surface
 print '#creating skin surface...'
@@ -71,7 +71,7 @@ cubit.cmd('create surface skin curve all')
 
 
 cubit.cmd('Display')    
-cubit.cmd('pause')
+#cubit.cmd('pause')
 
 # cleans up
 cubit.cmd('merge all ')
